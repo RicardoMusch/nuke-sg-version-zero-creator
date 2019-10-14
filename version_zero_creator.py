@@ -36,7 +36,7 @@ def run():
     # get hold of the shotgun api instance used by the engine, (or we could have created a new one)
     shotgun = current_engine.shotgun
     current_context = current_engine.context
-    print("Project:",current_context.project["name"])
+    #print("Project:",current_context.project["name"])
 
 
     "Get Playlists"
@@ -46,7 +46,7 @@ def run():
         ['sg_playlist_status', 'is', "Ready to Export"]
     ]
     playlists = shotgun.find('Playlist', filters, fields)
-    print playlists
+    #print playlists
     playlist_names = []
     for p in playlists:
         if not " " in p:
@@ -86,23 +86,24 @@ def run():
             pass
 
 
-        # #########################################################################################
-        # "Try to Create New Playlist on Shotgun"
-        # #########################################################################################
-        # data = {
-        #     'project': current_context.project,
-        #     'code': newPlaylistName,
-        # }
-        # try:
-        #     "Try to create new playlist"
-        #     sg_newPlaylist = shotgun.create('Playlist', data)
-        # except:
-        #     print "Playlist probbaly exists already"
-        #     filters = [
-        #     ['project', 'name_is', current_context.project["name"]],
-        #     ['code', 'name_is', newPlaylistName]
-        #     ]
-        #     sg_newPlaylist = shotgun.find_one('Playlist', filters, fields)
+        #########################################################################################
+        "Try to Create New Playlist on Shotgun"
+        #########################################################################################
+        data = {
+            'project': current_context.project,
+            'code': "VZ_"+selectedPlaylist,
+        }
+        try:
+            "Try to create new playlist"
+            sg_newPlaylist = shotgun.create('Playlist', data)
+        except:
+            print "Playlist probbaly exists already"
+            filters = [
+            ['project', 'name_is', current_context.project["name"]],
+            ['code', 'name_is', newPlaylistName]
+            ]
+            sg_newPlaylist = shotgun.find_one('Playlist', filters, fields)
+            print sg_newPlaylist
 
 
         #########################################################################################
@@ -144,7 +145,7 @@ def run():
                 'code': version_zero_name,
                 'description': "Version Zero",
                 'sg_path_to_frames': version.get("sg_path_to_frames"),
-                #"playlists": sg_newPlaylist,
+                "playlists": [ sg_newPlaylist ],
                 "sg_first_frame": version.get("sg_first_frame"),
                 "sg_last_frame": version.get("sg_last_frame"),
                 "frame_range": str(version.get("sg_first_frame"))+"-"+str(version.get("sg_last_frame")),
@@ -159,7 +160,7 @@ def run():
                 #########################################################################################
                 
                 ## WRITE JOB INFO FILE
-                jif = os.path.join(os.environ["TEMP"], str(time.time()).split(".")[0]+"_deadlineJobInfo.txt")
+                jif = os.path.join(os.environ["TEMP"], str(time.time()).replace(".", "")+"_deadlineJobInfo.txt")
                 print "Path to JobInfo File:", jif
                 file = open(jif,"w")
                 file.write("Plugin=Nuke") 
@@ -193,6 +194,11 @@ def run():
                 except:
                     pass
                 try:
+                    file.write("\nEnvironmentKeyValue"+str(env_count)+"=OUTPUT_FORMAT="+output_format)
+                    env_count = env_count+1
+                except:
+                    pass
+                try:
                     file.write("\nEnvironmentKeyValue"+str(env_count)+"=NUKE_PATH="+str(os.environ["NUKE_PATH"]))
                     env_count = env_count+1
                 except:
@@ -205,7 +211,7 @@ def run():
                 file.close() 
 
                 ## WRITE PLUGIN INFO FILE
-                pif = os.path.join(os.environ["TEMP"], str(time.time()).split(".")[0]+"deadlinePluginInfo.txt")
+                pif = os.path.join(os.environ["TEMP"], str(time.time()).replace(".", "")+"deadlinePluginInfo.txt")
                 print "Path to PluginInfo file:", pif
                 file = open(pif,"w")
                 file.write("Plugin=Nuke") 
@@ -244,13 +250,19 @@ def run():
                 # proc = subprocess.Popen([os.path.join(os.environ["DEADLINE_PATH"],"deadlinecommand.exe"), jif, pif], stdout=subprocess.PIPE, shell=True)
                 # (out, err) = proc.communicate()
                 # print "\n\nSending Version Zero to Deadline!\n", out
+                return
 
 
-            if "movies" in mainPanel.value("Output:"):
+            if mainPanel.value("Output:") == "movies_and_frames":
                 send_to_farm("movies")
-          
-            if "frames" in mainPanel.value("Output:"):
+                time.sleep(2)
                 send_to_farm("frames")
+            
+            if mainPanel.value("Output:") == "frames_only":
+                send_to_farm("frames_only")
+
+            if mainPanel.value("Output:") == "movies_only":
+                send_to_farm("movies_only")
 
 
         nuke.message("Done!\n\nCheck the Renderfarm for progress of the Version Zero Creation.")
