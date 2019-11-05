@@ -30,7 +30,7 @@
 
 
 ## Environement Variables to Hook
-- VZ_NUKE_SCRIPT
+- VZ_NUKE_SCRIPT  
 To load a different nuke script for version creation. 
 If not defined, the basic file will be loaded.
 
